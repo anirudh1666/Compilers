@@ -1,0 +1,7 @@
+*.class
+[Ll]exer.java
+[Pp]arser.java
+sym.java
+*.java~
+*.DS_Store
+*.csv

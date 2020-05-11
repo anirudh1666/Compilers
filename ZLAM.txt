@@ -1,0 +1,267 @@
+Z LAM
+=======
+
+
+- Consists of list declarations which defines global variables and new  data types as well as 
+  functions. List cannot be empty: must have definition for main function.
+
+- Two types of comments:
+  - Any text (^\n) following # at the end of the line is a comment.
+  - Any text within /# ...#/ is a comment. NOTE: include \n
+
+- Identifiers start with a letter, follow by n number of underscores, letters or digits. 
+  Case sensitive and no punctuation other than underscore.
+
+- Anon functions in the form of lambda expressions. Start with lambda followed by non-empty list
+  of comma seperated variables. Body follows :. EG f: int := lambda x, y : x + y + 5
+
+- Supports list comprehensions:
+  - Form : [x * 2 for x in range(10)]
+  - for and in are keywords
+  - range is function that generates integer sequences. Takes 3 arguments but only requires one.
+    range(start, end, increment)  AMBIGUITIY: (dont know when to stop in range, include 10 or not.)
+                                               Choose to not include ten eg range(10) = 0..9
+  - can add optional boolean value if. Needs a comma before and not terminated by fi
+    EG [x * 3 for x in range(100), if x / 2 = 5]
+
+- Character is a single letter, punctuation or digit wrapped by '' and has type char. 
+  Punctuation symbols: https://en.wikipedia.org/wiki/Punctuation
+  ASCII symbols: http://www.kerryr.net/pioneers/ascii3.htm
+
+- Boolean constants are T and F and have type bool. T and F cannot be used as identifiers.
+
+- Numbers are integers(int), rationals(rat), or floats(float). Negative numbers are represented by
+  - before the digits. 
+  int example = 1 or -1234
+  rational example = 1/3 or -34511/3   AMBIGUITIY: (typo here -345_11/3 paragraph 9)
+  float example = -0.1 or 3.14
+
+- Sequences(seq) are ordered containers of elements. Have nonnegative length. Sequence has type;
+  declaration specifies what type EG l : seq<int> := [1,2,3]
+                                         seq<char> := ['f','r','e','d','d','y']
+  seq<top> means sequence containing any type. EG seq<top> := [1,1/2,3.14,['f','o','u','r']]
+  Zero length list is []
+
+- Support standard indexing syntax. For any sequence, len(s) : seq -> N returns length of s and
+  indices of s range from 0 to len(s) - 1.
+  s[index] returns the element in s at index. 
+  String literals are syntactic sugar for character sequences, so "abc" is ['a','b','c'].
+  For seq<char> s[len(s) - 1] returns last element. len(s) returns total number of elements
+
+- Sequence slicing is also supported. id[i:j] returns another sequence, which is substring of id from
+  i to j. Includes both i and j. EG [1,2,3,4,5] [1:3] = [2,3,4]. 
+  When start index is not given implies start from 0 element. Similarly when last index is not given
+  it goes up to the end including last element. 
+  Indexes can be negative which means it will wrap backwards.
+  EG a[2:-1] == a[2:len(a)-1]      AMBIGUITIY: Paragraph 12 says a[2:a.len-1] but before it says to
+                                               use len(a) in paragraph 11.
+  Lower index must be positive (after upper index has been subtracted from seq length if it was neg
+  and smaller than upper index.
+
+ 
+
+				TABLE FOR DATA TYPES
+                                =====================
+
+
+		Kind        | Defined Over                | Syntax
+                ----------------------------------------------------------------
+                Boolean     | bool                        | !, &&, ||
+                Numeric     | int, rat, float             | +, -, *, /, ^
+                Sequences   | seq                         | in, ::, len(s), s[i]
+                Comparison  | int, rat, float             | < <=
+                            | bool, int, rat, float       | = !=
+
+
+
+-  ! = NOT      || = OR                                    = = referential equality(see if its equal)
+  && = AND      in = check if in sequence(return boolean) := = assignment
+                     only operates on outermost sequence.
+                     EG 3 in [[1],[2],[3]] is F.
+  :: = cons   s[i] = returns ith entry in s           len(s) = returns length of s
+
+
+DECLARATIONS
+=============
+
+- Syntax for field or variable declaration is id : type
+  Data type declaration = tdef type_id { declaration_list } ; 
+  where declaration_list is comma-seperated list of field/variable declarations. Once declared data
+  type can be used in subsequent declarations.
+
+- Support type aliasing. Syntax = alias old_name new_name; appears in declaration list and uses new
+  name instead of old. 
+  
+  EG alias seq<char> string;
+     tdef person {name : string, surname : string, age : int};
+     tdef family {mother : person, father : person, children : seq<person>};
+
+- Below is syntax for function declaration. name = identifier. formal_parameter_list seperates
+  parameter declarations, which follow variable/field declaration syntax id : type with commas. 
+  Function body cannot be empty. 
+  return type is returnType and is ommited when function is main or does not return a value.
+
+  fdef name (formal_paramter_list) { body } : returnType ;
+  fdef name (formal_parameter_list) { body } ;      -- does not return type or main.
+
+
+EXPRESSIONS
+===========
+
+
+- Expressions are applications of the operators defined above. () enforce precedence. For user 
+  defined datatypes, field references are expressions and have the form id.field. 
+
+- Function calls are expressions and parameters are expressions(in the semantic phase) as long as
+  they return a type that is the same as the type required by the function.
+
+  EXAMPLE EXPRESSIONS
+  ===================
+
+  How to call methods :
+  p.age + 10          -- p is person already declared.
+  b - foo(sum(10,c), bar()) = 30     shows method calls
+  s1 :: s2 :: [1,2]         cons each. 
+
+
+STATEMENTS
+==========
+
+- An expression_list is a comma seperated list of expressions. Statements apart from if-else and
+  loop end with a semi-colon. 
+  Loop ends with pool and if ends with fi
+  Return statement is optional and appears at the end of a function body. 
+  In an if-else statement else can appear >= 0 times.
+
+  AMBIGIUITY = Some of the code in specification end with space ; eg " ;" while others just end
+               with ; at the end of statement.  
+ 
+
+
+
+  Examples of statements
+  ----------------------
+
+  Assignment    var := expression ;
+  Input         read var ;
+  Output        print expression ;
+  Function Call functionId (expression_list) ;
+                if ( expression ) then body fi
+                if ( expression ) then body else body fi
+  Control Flow  loop body pool
+                break N;           // N is optional and defaults to 1
+                return expression ;
+
+
+
+
+- Variables can be initialised when they are declared "id : type := init ;". 
+  For data types that are newly defined, initialisation consists of a sequence of comma-seperated
+  values, each of which is assigned to the data type fields in the order of declaration.
+  EG seq<rat> := [1/2, 3, 42/17, -7]
+
+- read var; reads a value from standard input and stores it in var; 
+  print evaluates the print of its expression parameter, followed by \n
+
+- Unguarded loop statement is the only explicit loop construct in ZLAM. To exit a loop, one must
+  use break N, usually coupled with if statement. 
+  The optional argument N is a positive integer taht specifies the number of nested loops to exit
+  and defaults to 1.
+  The use of break statement outside a loop is forbidden.
+
+
+ Variable declaration and initialization
+ ---------------------------------------
+
+ int := 10
+ string := "hello world!";
+ person := "Shin", "Yoo", 30;
+ char := 'a';
+ seq<rat> := [1/2, 3, 42/17, -7]
+ int := foo();
+
+
+
+ Loop
+ ----
+
+ seq<int> := [1,2,3];
+ seq<int> := [4,5,6];
+ seq<int> := [x * 2 for x in range(10)];
+ int := 0;
+ int := 0;
+loop
+ if (2 < i) then
+  break
+ fi
+ loop 
+  if (2 < j) then
+   break;    // breaks to outer loop
+  fi
+  if (b[j] < a[i]) then
+   break 2;  // breaks out of two loops
+  fi
+  j := j + 1;
+ pool
+ i := i + 1;
+ j := 0;
+pool
+
+
+EXAMPLE PROGRAM
+===============
+
+main {        // main doesnt have to be last
+ a : seq<int> := [1,2,3];
+ b : seq<int> := reverse(a);      // this is a declaration
+ print b;
+};
+
+fdef reverse (inseq : seq<top>) {
+ outseq : seq<top> := [];
+ i : int := 0;
+ loop
+  if (len(inseq) <= i) then
+   break;
+  fi
+  outseq := inseq[i] :: outseq;
+  i := i + 1;
+ pool
+return outseq;
+} : seq<top>
+
+
+
+
+
+
+
+
+ERROR HANDLING
+==============
+
+
+- PArser is tested against positive and negative tests. Testing is scripted; so it is important
+  for your output to match what the script expects.
+
+- The provided SC class uses a boolean field syntaxErrors of the parser object to decide whether
+  parsing is successful. So please find such a public field in the Parser class and set it to true 
+  syntax error is generated.
+
+
+
+
+
+  
+
+
+
+
+
+
+
+
+  
+     
+
+

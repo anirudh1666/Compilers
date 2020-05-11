@@ -1,0 +1,268 @@
+
+import java_cup.runtime.*;
+
+scan with {: return lexer.next_token(); :};
+
+parser code {:
+
+  static class ErrorInfo {
+    public int line;
+    public int column;
+
+    public ErrorInfo(int line, int column) {
+      this.line = line;
+      this.column = column;
+    }
+  }
+
+  Lexer lexer;
+
+  // used by SC.java to decide whether parsing is successful
+  public boolean syntaxErrors;
+
+  public Parser(Lexer lex) {
+      super(lex);
+      lexer = lex;
+  }
+
+  public void syntax_error(Symbol cur_token) {
+    this.syntaxErrors = true;
+  }
+
+  public void unrecovered_syntax_error(Symbol cur_token) throws java.lang.Exception {
+    this.syntaxErrors = true;
+    report_fatal_error(
+      "Syntax error at line " + (cur_token.left+1) + ", column "
+      + cur_token.right + ".\n", null
+    );
+  }
+
+  public void custom_err_report(String message, int line, int column)
+    throws java.lang.Exception
+  {
+    this.syntaxErrors = true;
+    report_fatal_error( message + "\n", new ErrorInfo(line, column) );
+  }
+
+:};
+
+terminal CHARACTER, INTEGER, RATIONAL, FLOAT, BOOLEAN, TOP, BREAK, RETURN, TRUE, FALSE, LOOP, POOL, IF, FI, LAMBDA, SEQUENCE, FOR, TDEF, ALIAS, FDEF, ELSE, MAIN, PRINT, READ, NOT, AND, OR, EQ, ASSIGN, NOTEQ, CONCAT, LESSEQ, LESS, GREATEQ, GREAT, ADD, MINUS, TIMES, DIVIDE, POWER, IN, LEFTBRACK, RIGHTBRACK, COMMA, LEFTPAREN, RIGHTPAREN, LEFTCURLY, RIGHTCURLY, SEMICOLON, COLON, THEN, DOT, ILLEGAL_CHARACTER;
+terminal Character CHARID;
+terminal String ID;
+terminal Integer INTID;
+terminal String RATIONALID;
+terminal Float FLOATID;
+terminal String STRING;
+
+nonterminal programStart, main, globalDeclarations, globalDeclaration, functionDeclaration, typeDeclaration, aliasStatement, variableDeclaration, variableAssignment, parameterList, dataType, data, booleanData, seqType, mainStatements, mainStatement, ioStatement, loopStatement, mainStatementsBreak, mainStatementBreak, breakStatement, ifStatement, ifElseStatement, functionCall, expressionList, expression, indexExpression, sliceExpression, list, lambdaExpression, idList, variableStart, returnStatement;
+
+precedence left      AND, OR;
+precedence nonassoc  EQ, NOTEQ;
+precedence nonassoc  LESS, GREAT, LESSEQ, GREATEQ;
+precedence left      ADD, MINUS;
+precedence left      TIMES, DIVIDE;
+precedence right     NOT;
+precedence right     POWER;
+precedence left      DOT;
+precedence nonassoc  COLON;
+precedence right     CONCAT;
+precedence nonassoc  LEFTBRACK, RIGHTBRACK;
+precedence nonassoc  LEFTPAREN, RIGHTPAREN;
+
+
+programStart          ::=  globalDeclarations main
+                         | main globalDeclarations
+                         | globalDeclarations main globalDeclarations
+                         | main
+                         ;
+
+
+main                  ::=  MAIN LEFTCURLY mainStatements RIGHTCURLY SEMICOLON;
+
+
+globalDeclarations    ::=  globalDeclaration globalDeclarations
+                         | globalDeclaration
+                         ;
+
+
+globalDeclaration     ::=  functionDeclaration
+                         | typeDeclaration
+                         | aliasStatement
+                         | variableDeclaration
+                         | variableAssignment
+                         ;
+
+
+functionDeclaration   ::=  FDEF ID LEFTPAREN parameterList RIGHTPAREN LEFTCURLY mainStatements RIGHTCURLY SEMICOLON
+                         | FDEF ID LEFTPAREN RIGHTPAREN LEFTCURLY mainStatements RIGHTCURLY SEMICOLON
+                         | FDEF ID LEFTPAREN parameterList RIGHTPAREN LEFTCURLY mainStatements RIGHTCURLY COLON dataType SEMICOLON
+                         | FDEF ID LEFTPAREN RIGHTPAREN LEFTCURLY mainStatements RIGHTCURLY COLON dataType SEMICOLON
+                         ;
+
+
+typeDeclaration       ::=  TDEF ID LEFTCURLY parameterList RIGHTCURLY SEMICOLON;
+
+
+aliasStatement        ::=  ALIAS dataType ID SEMICOLON;
+
+variableStart         ::=  ID COLON dataType;
+
+variableDeclaration   ::= variableStart SEMICOLON;
+
+variableAssignment    ::= variableStart ASSIGN expressionList SEMICOLON;
+
+parameterList         ::=  ID COLON dataType COMMA parameterList
+                         | ID COLON dataType
+                         ;
+
+
+dataType              ::=  CHARACTER
+                         | INTEGER
+                         | RATIONAL
+                         | FLOAT
+                         | BOOLEAN
+                         | TOP
+                         | seqType
+                         | ID
+                         ;
+
+
+data                  ::=  CHARID
+                         | INTID
+                         | RATIONALID
+                         | FLOATID
+                         | STRING
+                         | booleanData
+                         ;
+
+
+booleanData           ::=  TRUE | FALSE;
+
+
+seqType               ::=  SEQUENCE LESS dataType GREAT;
+
+
+mainStatements        ::=  mainStatement mainStatements
+                         | mainStatement
+                         ;
+
+
+mainStatement         ::=  variableAssignment
+                         | variableDeclaration
+                         | aliasStatement
+                         | typeDeclaration
+                         | expression ASSIGN expression SEMICOLON
+                         | loopStatement 
+                         | ifStatement
+                         | ifElseStatement
+                         | ioStatement 
+                         | returnStatement
+                         | functionCall SEMICOLON
+                         ;
+
+
+ioStatement           ::=  PRINT expression SEMICOLON
+                         | READ ID SEMICOLON
+                         ;
+
+
+loopStatement         ::=  LOOP mainStatementsBreak POOL;
+                     
+
+
+mainStatementsBreak   ::=  mainStatementBreak mainStatementsBreak
+                         | mainStatementBreak
+                         ;
+
+
+mainStatementBreak    ::=  variableAssignment
+                         | variableDeclaration
+                         | aliasStatement
+                         | typeDeclaration
+                         | expression ASSIGN expression SEMICOLON
+                         | loopStatement
+                         | ifStatement
+                         | ifElseStatement
+                         | ioStatement
+                         | functionCall SEMICOLON
+                         | returnStatement
+                         | breakStatement
+                         ;
+
+returnStatement       ::=  RETURN expression SEMICOLON
+                         | RETURN SEMICOLON
+                         ;
+
+breakStatement        ::=  BREAK SEMICOLON
+                         | BREAK expression SEMICOLON
+                         ;
+
+
+ifStatement           ::=  IF LEFTPAREN expression RIGHTPAREN THEN mainStatementsBreak FI;
+                         
+ifElseStatement       ::=  IF LEFTPAREN expression RIGHTPAREN THEN mainStatementsBreak ELSE mainStatementsBreak FI;
+
+
+functionCall          ::=  ID LEFTPAREN expressionList RIGHTPAREN 
+                         | ID LEFTPAREN RIGHTPAREN
+                         ;
+
+
+expressionList        ::=  expression COMMA expressionList
+                         | expression
+                         ;
+
+
+expression            ::=  expression LESSEQ expression
+                         | expression LESS expression
+                         | expression GREAT expression
+                         | expression GREATEQ expression
+                         | expression EQ expression
+                         | expression NOTEQ expression
+                         | expression AND expression
+                         | expression OR expression
+                         | NOT expression
+                         | expression ADD expression
+                         | expression MINUS expression
+                         | expression TIMES expression
+                         | expression DIVIDE expression
+                         | expression POWER expression
+                         | LEFTPAREN expression RIGHTPAREN
+                         | expression DOT ID
+                         | functionCall 
+                         | lambdaExpression
+                         | expression CONCAT expression
+                         | indexExpression
+                         | sliceExpression
+                         | LEFTBRACK expression FOR ID IN functionCall RIGHTBRACK
+                         | data
+                         | list
+                         | ID
+                         ;
+
+
+indexExpression       ::=  expression LEFTBRACK expression RIGHTBRACK
+                         | expression LEFTBRACK expression RIGHTBRACK LEFTBRACK expression RIGHTBRACK  
+                         ;
+
+
+
+sliceExpression       ::=  expression LEFTBRACK expression COLON expression RIGHTBRACK 
+                         | expression LEFTBRACK COLON RIGHTBRACK
+                         | expression LEFTBRACK COLON expression RIGHTBRACK
+                         | expression LEFTBRACK expression COLON RIGHTBRACK
+                         ;
+
+
+list                  ::=  LEFTBRACK expressionList RIGHTBRACK 
+                         | LEFTBRACK RIGHTBRACK
+                         ;
+
+
+lambdaExpression      ::=  LAMBDA idList COLON expression;
+
+
+idList                ::=  ID COMMA idList
+                         | ID 
+                         ;
+
